@@ -581,7 +581,7 @@ ngx_rtmp_hls_write_playlist(ngx_rtmp_session_t *s)
           p = ngx_slprintf(p, end,
                          "#EXTINF:%.3f,\n"
                          "%uL_%uL.ts\n",
-                         f->duration, f->id, i);
+                         f->duration, f->id >> 16, f->id & 0xFF);
         } else {
           p = ngx_slprintf(p, end,
                          "#EXTINF:%.3f,\n"
@@ -817,8 +817,12 @@ ngx_rtmp_hls_get_fragment_id(ngx_rtmp_session_t *s, uint64_t ts)
         return ts;
 
     case NGX_RTMP_HLS_NAMING_SYSTEM:
-    case NGX_RTMP_HLS_NAMING_HYBRID:
         return (uint64_t) ngx_cached_time->sec * 1000 + ngx_cached_time->msec;
+        
+    case NGX_RTMP_HLS_NAMING_HYBRID:
+        uint64_t tsPart = (uint64_t) (ngx_cached_time->sec * 1000 + ngx_cached_time->msec);
+        uint64_t seqPart = (uint64_t) (ctx->frag + ctx->nfrags);
+        return ((tsPart << 16) | (seqPart & 0xFF));
         
     default: /* NGX_RTMP_HLS_NAMING_SEQUENTIAL */
         return ctx->frag + ctx->nfrags;
@@ -887,7 +891,11 @@ ngx_rtmp_hls_open_fragment(ngx_rtmp_session_t *s, uint64_t ts,
         id = (uint64_t) (id / g) * g;
     }
 
-    ngx_sprintf(ctx->stream.data + ctx->stream.len, "%uL.ts%Z", id);
+    if (NGX_RTMP_HLS_NAMING_HYBRID == hacf->naming) {
+      ngx_sprintf(ctx->stream.data + ctx->stream.len, "%uL_%uL.ts%Z", id >> 16, id & 0xFF);
+    } else {
+      ngx_sprintf(ctx->stream.data + ctx->stream.len, "%uL.ts%Z", id);
+    }
 
     if (hacf->keys) {
         if (ctx->key_frags == 0) {
