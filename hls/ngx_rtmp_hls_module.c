@@ -120,6 +120,7 @@ typedef struct {
 #define NGX_RTMP_HLS_NAMING_SEQUENTIAL  1
 #define NGX_RTMP_HLS_NAMING_TIMESTAMP   2
 #define NGX_RTMP_HLS_NAMING_SYSTEM      3
+#define NGX_RTMP_HLS_NAMING_HYBRID      4
 
 
 #define NGX_RTMP_HLS_SLICING_PLAIN      1
@@ -134,6 +135,7 @@ static ngx_conf_enum_t                  ngx_rtmp_hls_naming_slots[] = {
     { ngx_string("sequential"),         NGX_RTMP_HLS_NAMING_SEQUENTIAL },
     { ngx_string("timestamp"),          NGX_RTMP_HLS_NAMING_TIMESTAMP  },
     { ngx_string("system"),             NGX_RTMP_HLS_NAMING_SYSTEM     },
+    { ngx_string("hybrid"),             NGX_RTMP_HLS_NAMING_HYBRID     },
     { ngx_null_string,                  0 }
 };
 
@@ -574,10 +576,18 @@ ngx_rtmp_hls_write_playlist(ngx_rtmp_session_t *s)
 
         prev_key_id = f->key_id;
 
-        p = ngx_slprintf(p, end,
+        
+        if (NGX_RTMP_HLS_NAMING_HYBRID == hacf->naming) {
+          p = ngx_slprintf(p, end,
+                         "#EXTINF:%.3f,\n"
+                         "%uL_%uL.ts\n",
+                         f->duration, f->id, i);
+        } else {
+          p = ngx_slprintf(p, end,
                          "#EXTINF:%.3f,\n"
                          "%V%V%s%uL.ts\n",
                          f->duration, &hacf->base_url, &name_part, sep, f->id);
+        }
 
         ngx_log_debug5(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
                        "hls: fragment frag=%uL, n=%ui/%ui, duration=%.3f, "
@@ -808,7 +818,7 @@ ngx_rtmp_hls_get_fragment_id(ngx_rtmp_session_t *s, uint64_t ts)
 
     case NGX_RTMP_HLS_NAMING_SYSTEM:
         return (uint64_t) ngx_cached_time->sec * 1000 + ngx_cached_time->msec;
-
+        
     default: /* NGX_RTMP_HLS_NAMING_SEQUENTIAL */
         return ctx->frag + ctx->nfrags;
     }
