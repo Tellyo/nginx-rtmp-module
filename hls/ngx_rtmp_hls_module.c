@@ -811,6 +811,9 @@ ngx_rtmp_hls_get_fragment_id(ngx_rtmp_session_t *s, uint64_t ts)
 
     hacf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_hls_module);
 
+    uint64_t tsPart = (uint64_t) (ngx_cached_time->sec * 1000 + ngx_cached_time->msec);
+    uint64_t seqPart = (uint64_t) (ctx->frag + ctx->nfrags);
+
     switch (hacf->naming) {
 
     case NGX_RTMP_HLS_NAMING_TIMESTAMP:
@@ -820,8 +823,6 @@ ngx_rtmp_hls_get_fragment_id(ngx_rtmp_session_t *s, uint64_t ts)
         return (uint64_t) ngx_cached_time->sec * 1000 + ngx_cached_time->msec;
         
     case NGX_RTMP_HLS_NAMING_HYBRID:
-        uint64_t tsPart = (uint64_t) (ngx_cached_time->sec * 1000 + ngx_cached_time->msec);
-        uint64_t seqPart = (uint64_t) (ctx->frag + ctx->nfrags);
         return ((tsPart << 16) | (seqPart & 0xFF));
         
     default: /* NGX_RTMP_HLS_NAMING_SEQUENTIAL */
