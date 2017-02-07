@@ -581,7 +581,7 @@ ngx_rtmp_hls_write_playlist(ngx_rtmp_session_t *s)
           p = ngx_slprintf(p, end,
                          "#EXTINF:%.3f,\n"
                          "%uL_%uL.ts\n",
-                         f->duration, f->id >> 16, f->id & 0xFF);
+                         f->duration, f->id >> 16, f->id & 0xFFFF);
         } else {
           p = ngx_slprintf(p, end,
                          "#EXTINF:%.3f,\n"
