@@ -985,7 +985,9 @@ ngx_rtmp_hls_open_fragment(ngx_rtmp_session_t *s, uint64_t ts,
 
     /* start fragment with audio to make iPhone happy */
 
+    /* commented out - fix for segments starting with a lot of audio
     ngx_rtmp_hls_flush_audio(s);
+    */
 
     return NGX_OK;
 }
